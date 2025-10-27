@@ -22,6 +22,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # ===============================
 # Copy the rest of the project needed at runtime
 # ===============================
+COPY app ./app
 COPY dataset/model_results ./dataset
 
 # ===============================
