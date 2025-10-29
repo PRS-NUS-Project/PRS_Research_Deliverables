@@ -9,7 +9,7 @@ import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from config import DEFAULT_CONFIG, DatasetConfig
+from config import DatasetConfig
 
 
 @dataclass
@@ -265,31 +265,33 @@ class AnnotationVisualizer:
         return img
 
 
-def validate():
-    analyzer = BoundingBoxAnalyzer(DEFAULT_CONFIG)
+def validate(config: DatasetConfig):
+    analyzer = BoundingBoxAnalyzer(config)
     analyzer.validate_all()
 
 
-def analyze():
-    analyzer = BoundingBoxAnalyzer(DEFAULT_CONFIG)
+def analyze(config: DatasetConfig):
+    analyzer = BoundingBoxAnalyzer(config)
     analyzer.analyze_all()
     analyzer.plot_metrics()
 
 
-def visualize():
-    visualizer = AnnotationVisualizer(DEFAULT_CONFIG)
+def visualize(config: DatasetConfig):
+    visualizer = AnnotationVisualizer(config)
     visualizer.visualize_all()
 
 
 def main():
+    config = DatasetConfig()
+
     print("=== Validating Bounding Boxes ===")
-    validate()
+    validate(config)
     print("\n" + "=" * 50 + "\n")
     print("=== Analyzing Bounding Boxes ===")
-    analyze()
+    analyze(config)
     print("\n" + "=" * 50 + "\n")
     print("=== Visualizing Annotations ===")
-    visualize()
+    visualize(config)
 
 
 if __name__ == "__main__":

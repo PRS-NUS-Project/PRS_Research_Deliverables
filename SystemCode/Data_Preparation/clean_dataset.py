@@ -4,7 +4,7 @@ import shutil
 from dataclasses import dataclass
 from typing import List
 
-from config import DEFAULT_CONFIG, DatasetConfig
+from config import DatasetConfig, PathConfig
 
 
 @dataclass
@@ -215,7 +215,31 @@ class DatasetCleaner:
 
 
 def main():
-    cleaner = DatasetCleaner(DEFAULT_CONFIG)
+    # config = DatasetConfig(
+    #     wanted_categories={
+    #         1: "Inferior Epigastric Vessels",
+    #         2: "Pubic Bone",
+    #         3: "Testicular Vessels",
+    #         4: "Triangle of Doom",
+    #         5: "Triangle of Pain",
+    #         6: "Vas Deferens",
+    #     },
+    #     raw_json_files=[
+    #         "train_annotations.coco.json",
+    #         "test_annotations.coco.json",
+    #         "valid_annotations.coco.json",
+    #     ],
+    #     merged_json_file="merged_annotations.coco.json",
+    #     paths=PathConfig(
+    #         raw_json_dir="640_tep_dataset/raw/json",
+    #         raw_images_dir="640_tep_dataset/raw/images",
+    #         cleaned_json_dir="640_tep_dataset/cleaned/json",
+    #         cleaned_images_dir="640_tep_dataset/cleaned/images",
+    #     ),
+    # )
+    config = DatasetConfig()
+
+    cleaner = DatasetCleaner(config)
     cleaner.process_dataset()
 
 

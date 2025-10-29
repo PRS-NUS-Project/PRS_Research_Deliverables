@@ -4,4 +4,6 @@ __pycache__/
 annotated_images/*
 
 *.png
+*.jpg
 *.zip
+*.txt

@@ -22,27 +22,24 @@ class PathConfig:
     def cleaned_json_path(self, file_name: str = "") -> str:
         return os.path.join(self.cleaned_json_dir, file_name)
 
+default_wanted_categories = {
+    5: "Triangle of Doom",
+    6: "Triangle of Pain",
+    8: "Vas Deferens",
+    10: "Pubic Bone",
+    14: "Inferior Epigastric Vessels",
+    15: "Testicular Vessels",
+}
+
+default_raw_json_files=[
+    "coco-1756384709.315322.json",
+    "coco-1756384724.5534823.json",
+    "coco-1756384753.9625523.json",
+]
 
 @dataclass
 class DatasetConfig:
-    wanted_categories: Dict[int, str]
-    raw_json_files: list[str]
+    wanted_categories: Dict[int, str] = field(default_factory=lambda : default_wanted_categories)
+    raw_json_files: list[str] = field(default_factory=lambda : default_raw_json_files)
     merged_json_file: str = "coco-merged.json"
     paths: PathConfig = field(default_factory=PathConfig)
-
-
-DEFAULT_CONFIG = DatasetConfig(
-    wanted_categories={
-        5: "Triangle of Doom",
-        6: "Triangle of Pain",
-        8: "Vas Deferens",
-        10: "Pubic Bone",
-        14: "Inferior Epigastric Vessels",
-        15: "Testicular Vessels",
-    },
-    raw_json_files=[
-        "coco-1756384709.315322.json",
-        "coco-1756384724.5534823.json",
-        "coco-1756384753.9625523.json",
-    ],
-)
