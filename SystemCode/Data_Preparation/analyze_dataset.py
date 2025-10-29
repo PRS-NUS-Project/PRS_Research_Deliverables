@@ -2,6 +2,11 @@ import json
 from dataclasses import dataclass, field
 from typing import Dict, Set
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import matplotlib
 from config import DEFAULT_CONFIG, DatasetConfig
 
 
@@ -15,18 +20,22 @@ class AnnotationStats:
         return self.total_good + self.total_bad
 
     def print_summary(self):
-        print(f"Total annotations count: {self.total}")
+        print(f"\n{'='*60}")
+        print(f"{'ANNOTATION SUMMARY':^60}")
+        print(f"{'='*60}")
+        print(f"  Total Annotations:        {self.total:>10,}")
+
         if self.total > 0:
             bad_percentage = self.total_bad / self.total * 100
             good_percentage = self.total_good / self.total * 100
+
             print(
-                f"Total annotations that will not be used: {self.total_bad} "
-                f"which is {bad_percentage:.2f}% of annotations"
+                f"  ├─ Used:                  {self.total_good:>10,}  ({good_percentage:>5.1f}%)"
             )
             print(
-                f"Total annotations that will be used: {self.total_good} "
-                f"which is {good_percentage:.2f}% of annotations"
+                f"  └─ Excluded:              {self.total_bad:>10,}  ({bad_percentage:>5.1f}%)"
             )
+        print(f"{'='*60}\n")
 
 
 @dataclass
@@ -57,16 +66,15 @@ class AnnotationCounter:
         good_count = len(good_annotations)
         bad_count = found_count - good_count
 
-        print(f"File: {file_path}")
-        print(f"  Annotations found: {found_count}")
-        print(f"  Annotations that will not be used: {bad_count}")
-        print(f"  Annotations that will be used: {good_count}")
-        print()
+        print(f"\n  File: {file_path}")
+        print(f"    Total Found:     {found_count:>6,}")
+        print(f"    ├─ Used:         {good_count:>6,}")
+        print(f"    └─ Excluded:     {bad_count:>6,}")
 
         return good_count, bad_count
 
-    def analyze_merged_file(self, file_name: str) -> None:
-        file_path = self.config.paths.cleaned_json_path(file_name)
+    def analyze_merged_file(self) -> None:
+        file_path = self.config.paths.cleaned_json_path(self.config.merged_json_file)
         good_count, bad_count = self.count_annotations_in_file(file_path)
 
         self.stats.total_good += good_count
@@ -99,39 +107,89 @@ class CategoryCounter:
         all_image_ids = set()
         total_instances = 0
 
-        for cat_id, category in self.categories.items():
-            print(f"Category {cat_id} which is '{category.name}':")
-            print(f"    Associated Images = {len(category.image_ids)}")
-            print(f"    Total Instances = {category.instances}")
+        print(f"\n{'='*70}")
+        print(f"{'CATEGORY BREAKDOWN':^70}")
+        print(f"{'='*70}")
+        print(f"  {'Category':<30} {'Images':<15} {'Instances':<15}")
+        print(f"  {'-'*30} {'-'*15} {'-'*15}")
+
+        for cat_id, category in sorted(self.categories.items()):
+            images_count = len(category.image_ids)
+            instances_count = category.instances
+
+            print(f"  {category.name:<30} {images_count:<15,} {instances_count:<15,}")
 
             all_image_ids.update(category.image_ids)
             total_instances += category.instances
 
-        print()
-        print(f"Total unique images: {len(all_image_ids)}")
-        print(f"Total instances: {total_instances}")
+        print(f"  {'-'*30} {'-'*15} {'-'*15}")
+        print(f"  {'TOTAL':<30} {len(all_image_ids):<15,} {total_instances:<15,}")
+        print(f"{'='*70}\n")
 
-    def analyze_merged_file(self, file_name: str) -> None:
-        file_path = self.config.paths.cleaned_json_path(file_name)
+    def plot_categories(self, output_path: str = "category_analysis.png") -> None:
+        if not self.categories:
+            print("[WARNING] No categories to plot")
+            return
+
+        sorted_categories = sorted(self.categories.items())
+        category_names = [cat.name for _, cat in sorted_categories]
+        images_counts = [len(cat.image_ids) for _, cat in sorted_categories]
+        instances_counts = [cat.instances for _, cat in sorted_categories]
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+        fig.suptitle("Category Distribution Analysis", fontsize=16, fontweight="bold")
+
+        x_pos = range(len(category_names))
+        cmap = matplotlib.colormaps['Set3']
+        colors = cmap(range(len(category_names)))
+
+        ax1.bar(x_pos, images_counts, color=colors, edgecolor="black", linewidth=1.2)
+        ax1.set_xlabel("Category", fontsize=12, fontweight="bold")
+        ax1.set_ylabel("Number of Images", fontsize=12, fontweight="bold")
+        ax1.set_title("Images per Category", fontsize=14, fontweight="bold")
+        ax1.set_xticks(x_pos)
+        ax1.set_xticklabels(category_names, rotation=45, ha="right")
+        ax1.grid(axis="y", alpha=0.3, linestyle="--")
+
+        for i, v in enumerate(images_counts):
+            ax1.text(i, v, f"{v:,}", ha="center", va="bottom", fontweight="bold")
+
+        ax2.bar(x_pos, instances_counts, color=colors, edgecolor="black", linewidth=1.2)
+        ax2.set_xlabel("Category", fontsize=12, fontweight="bold")
+        ax2.set_ylabel("Number of Instances", fontsize=12, fontweight="bold")
+        ax2.set_title("Instances per Category", fontsize=14, fontweight="bold")
+        ax2.set_xticks(x_pos)
+        ax2.set_xticklabels(category_names, rotation=45, ha="right")
+        ax2.grid(axis="y", alpha=0.3, linestyle="--")
+
+        for i, v in enumerate(instances_counts):
+            ax2.text(i, v, f"{v:,}", ha="center", va="bottom", fontweight="bold")
+
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        plt.close()
+
+        print(f"[INFO] Category analysis plot saved to {output_path}")
+
+    def analyze_merged_file(self) -> None:
+        file_path = self.config.paths.cleaned_json_path(self.config.merged_json_file)
         self.count_categories_in_file(file_path)
         self.print_summary()
+        self.plot_categories()
 
 
 def count_annotations():
     counter = AnnotationCounter(DEFAULT_CONFIG)
-    counter.analyze_merged_file(DEFAULT_CONFIG.merged_output_filename)
+    counter.analyze_merged_file()
 
 
 def count_categories():
     counter = CategoryCounter(DEFAULT_CONFIG)
-    counter.analyze_merged_file(DEFAULT_CONFIG.merged_output_filename)
+    counter.analyze_merged_file()
 
 
 def main():
-    print("=== Annotation Analysis ===")
     count_annotations()
-    print("\n" + "=" * 50 + "\n")
-    print("=== Category Analysis ===")
     count_categories()
 
 

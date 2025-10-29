@@ -32,9 +32,7 @@ class BoundingBoxAnalyzer:
         self.metrics = BBoxMetrics()
 
     def load_data(self) -> dict:
-        merged_path = self.config.paths.cleaned_json_path(
-            self.config.merged_output_filename
-        )
+        merged_path = self.config.paths.cleaned_json_path(self.config.merged_json_file)
         with open(merged_path) as f:
             return json.load(f)
 
@@ -183,9 +181,7 @@ class AnnotationVisualizer:
         self.category_colors = colors
 
     def load_data(self) -> dict:
-        merged_path = self.config.paths.cleaned_json_path(
-            self.config.merged_output_filename
-        )
+        merged_path = self.config.paths.cleaned_json_path(self.config.merged_json_file)
         with open(merged_path) as f:
             return json.load(f)
 

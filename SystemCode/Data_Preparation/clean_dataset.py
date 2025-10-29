@@ -196,16 +196,19 @@ class DatasetCleaner:
 
     def process_dataset(self) -> None:
         print("[INFO] Cleaning individual JSON files...")
-        for file_name in self.config.json_files:
+        for file_name in self.config.raw_json_files:
             self.clean_json_file(file_name)
 
         print("[INFO] Merging cleaned JSON files...")
-        self.merge_json_files(
-            self.config.json_files, self.config.merged_output_filename
-        )
+        self.merge_json_files(self.config.raw_json_files, self.config.merged_json_file)
+
+        print("[INFO] Removing temporary cleaned JSON files...")
+        for file_name in self.config.raw_json_files:
+            file_path = self.config.paths.cleaned_json_path(file_name)
+            os.remove(file_path)
 
         print("[INFO] Copying valid frames...")
-        self.copy_valid_frames(self.config.merged_output_filename)
+        self.copy_valid_frames(self.config.merged_json_file)
 
         final_frame_count = len(os.listdir(self.config.paths.cleaned_image_path()))
         self.stats.print_summary(final_frame_count)

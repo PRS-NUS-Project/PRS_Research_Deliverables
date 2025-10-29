@@ -26,8 +26,8 @@ class PathConfig:
 @dataclass
 class DatasetConfig:
     wanted_categories: Dict[int, str]
-    json_files: list[str]
-    merged_output_filename: str = "coco-merged.json"
+    raw_json_files: list[str]
+    merged_json_file: str = "coco-merged.json"
     paths: PathConfig = field(default_factory=PathConfig)
 
 
@@ -40,7 +40,7 @@ DEFAULT_CONFIG = DatasetConfig(
         14: "Inferior Epigastric Vessels",
         15: "Testicular Vessels",
     },
-    json_files=[
+    raw_json_files=[
         "coco-1756384709.315322.json",
         "coco-1756384724.5534823.json",
         "coco-1756384753.9625523.json",
