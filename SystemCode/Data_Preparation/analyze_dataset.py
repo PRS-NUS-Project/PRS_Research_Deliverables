@@ -101,8 +101,8 @@ class CategoryCounter:
 
         for cat_id, category in self.categories.items():
             print(f"Category {cat_id} which is '{category.name}':")
-            print(f"    Images = {len(category.image_ids)}")
-            print(f"    Instances = {category.instances}")
+            print(f"    Associated Images = {len(category.image_ids)}")
+            print(f"    Total Instances = {category.instances}")
 
             all_image_ids.update(category.image_ids)
             total_instances += category.instances

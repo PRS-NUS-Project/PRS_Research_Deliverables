@@ -1,0 +1,7 @@
+__pycache__/
+
+*_dataset/*
+annotated_images/*
+
+*.png
+*.zip

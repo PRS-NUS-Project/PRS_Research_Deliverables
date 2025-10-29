@@ -5,10 +5,10 @@ from typing import Dict
 
 @dataclass
 class PathConfig:
-    raw_images_dir: str = os.path.join("raw", "Image Files")
-    raw_json_dir: str = os.path.join("raw", "JSON Files")
-    cleaned_images_dir: str = os.path.join("cleaned", "Image Files")
-    cleaned_json_dir: str = os.path.join("cleaned", "JSON Files")
+    raw_images_dir: str = os.path.join("raw_dataset", "Image Files")
+    raw_json_dir: str = os.path.join("raw_dataset", "JSON Files")
+    cleaned_images_dir: str = os.path.join("cleaned_dataset", "Image Files")
+    cleaned_json_dir: str = os.path.join("cleaned_dataset", "JSON Files")
 
     def raw_image_path(self, file_name: str = "") -> str:
         return os.path.join(self.raw_images_dir, file_name)
