@@ -26,6 +26,18 @@ REM Upgrade pip
 echo Upgrading pip...
 python -m pip install --upgrade pip
 
+REM Install ffmpeg
+echo Installing ffmpeg...
+IF NOT EXIST "ffmpeg.exe" (
+    powershell -Command "Invoke-WebRequest -Uri 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip' -OutFile 'ffmpeg.zip'"
+    powershell -Command "Expand-Archive -Path 'ffmpeg.zip' -DestinationPath '.'"
+    for /d %%i in (ffmpeg-*) do move "%%i\bin\ffmpeg.exe" .
+    del ffmpeg.zip
+    rmdir /s /q ffmpeg-*
+) ELSE (
+    echo ffmpeg already installed.
+)
+
 REM Install requirements
 echo Installing dependencies...
 pip install -r requirements-dev.txt

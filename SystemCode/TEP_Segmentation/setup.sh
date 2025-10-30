@@ -26,6 +26,21 @@ source .venv/bin/activate
 echo "Upgrading pip..."
 python -m pip install --upgrade pip
 
+# Install ffmpeg
+echo "Installing ffmpeg..."
+if ! command -v ffmpeg &> /dev/null; then
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        sudo apt update && sudo apt install -y ffmpeg
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        brew install ffmpeg
+    else
+        echo "Unsupported OS for automatic ffmpeg installation. Please install ffmpeg manually."
+        exit 1
+    fi
+else
+    echo "ffmpeg already installed."
+fi
+
 # Install requirements
 echo "Installing dependencies..."
 pip install -r requirements-dev.txt

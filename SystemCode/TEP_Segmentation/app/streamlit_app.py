@@ -163,10 +163,18 @@ def add_labels_to_image(image_path, predictions, output_path, text_background=Fa
         label = pred["class"]
         x = pred["x"]
         y = pred["y"]
+        w=pred['width']
+        h=pred['height']
 
         text_bbox = draw.textbbox((0, 0), label, font=font)
         text_width = text_bbox[2] - text_bbox[0]
         text_height = text_bbox[3] - text_bbox[1]
+
+        x0 = x - (w / 2)   
+        y0 = y - (h / 2)   
+        x1 = x + (w / 2)   
+        y1 = y + (h / 2)   
+
 
         if text_background:
             bg_x = x - text_width // 2 - 5
@@ -176,15 +184,15 @@ def add_labels_to_image(image_path, predictions, output_path, text_background=Fa
             draw.rectangle(
                 [bg_x, bg_y, bg_x + bg_width, bg_y + bg_height], fill=(0, 123, 255, 200)
             )
-
+            
         text_x = x - text_width // 2
         text_y = y - text_height // 2
         draw.text((text_x, text_y), label, fill=(255, 255, 255, 255), font=font)
+        draw.rectangle([x0, y0, x1, y1], outline=(0, 255, 0), width=3)
 
     result = Image.alpha_composite(img, overlay)
     result = result.convert("RGB")
     result.save(output_path)
-
 
 col1, col2 = st.columns([3, 3])
 
