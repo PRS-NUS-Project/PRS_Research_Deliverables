@@ -149,20 +149,15 @@ def initialize_model():
         return None
 
 
-def add_labels_to_image(image_path, predictions, output_path, background=False):
+def add_labels_to_image(image_path, predictions, output_path, text_background=False):
     img = Image.open(image_path).convert("RGBA")
     overlay = Image.new("RGBA", img.size, (255, 255, 255, 0))
     draw = ImageDraw.Draw(overlay)
 
     try:
-        font = ImageFont.truetype(
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24
-        )
+        font = ImageFont.truetype("arial.ttf", 24)
     except:
-        try:
-            font = ImageFont.truetype("arial.ttf", 24)
-        except:
-            font = ImageFont.load_default()
+        font = ImageFont.load_default()
 
     for pred in predictions.predictions:
         label = pred["class"]
@@ -173,7 +168,7 @@ def add_labels_to_image(image_path, predictions, output_path, background=False):
         text_width = text_bbox[2] - text_bbox[0]
         text_height = text_bbox[3] - text_bbox[1]
 
-        if background:
+        if text_background:
             bg_x = x - text_width // 2 - 5
             bg_y = y - text_height // 2 - 5
             bg_width = text_width + 10
