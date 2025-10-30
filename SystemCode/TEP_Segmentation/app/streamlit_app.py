@@ -2,7 +2,6 @@ import streamlit as st
 import os
 import tempfile
 import shutil
-import zipfile
 import time
 import base64
 from roboflow import Roboflow
@@ -93,8 +92,6 @@ st.markdown(
 '''
 , unsafe_allow_html=True)
 
-# page configuration
-
 st.set_page_config(
   page_title= 'TEP Segmentation',
   page_icon='🧊',
@@ -102,73 +99,107 @@ st.set_page_config(
   initial_sidebar_state='expanded',
 )
 
-# sidebar for instructions
 with st.sidebar:
     st.header("Instructions")
     st.write("Upload an image, video, or zip file containing frames for TEP segmentation.")
     st.write("- **Image**: Direct inference and display.")
-    st.write("- **Video**: Extract frames from video.")
+    st.write("- **Video**: Extract frames or process entire video.")
     st.write("- **Zip**: Download extracted frames.")
     st.info("Supported formats: PNG, JPG, JPEG, MOV, MP4, AVI, ZIP")
 
-# title of the app
 st.title("TEP Segmentation Application 🧊")
 
-# Initialize session state for video processing
 if 'video_processed' not in st.session_state:
     st.session_state.video_processed = False
 if 'zip_bytes' not in st.session_state:
     st.session_state.zip_bytes = None
+if 'processed_video_bytes' not in st.session_state:
+    st.session_state.processed_video_bytes = None
+if 'video_mode' not in st.session_state:
+    st.session_state.video_mode = None
 
-# main content with columns
+def initialize_model():
+    try:
+        model_predict = Roboflow(api_key='g9TuHO8utwgvXT0KEmnR')
+        workspace = model_predict.workspace()
+        if workspace is None:
+            st.error("Failed to access workspace")
+            return None
+        project = workspace.project('tep-instance-segmentation-em54w')
+        if project is None:
+            st.error("Failed to access project")
+            return None
+        version = project.version(2)
+        if version is None:
+            st.error("Failed to access model version")
+            return None
+        model = version.model
+        if model is None:
+            st.error("Failed to load model")
+            return None
+        return model
+    except Exception as e:
+        st.error(f"Error initializing model: {str(e)}")
+        return None
+
 col1, col2 = st.columns([3, 3])
 
 with col1:
     st.subheader("Upload File")
     upload_file = st.file_uploader("Upload a zip file containing image frames, a video, or an image", type=["zip", "mov", "mp4", "avi", "png", "jpg", "jpeg"])
+    
+    if upload_file is not None and upload_file.type in ['video/mp4', 'video/quicktime', 'video/x-msvideo']:
+        if not st.session_state.video_processed:
+            st.subheader("Video Processing Options")
+            video_option = st.radio(
+                "Choose how to process the video:",
+                ("Extract Frames (ZIP)", "Annotate Video (Run Model on All Frames)"),
+                key="video_processing_option"
+            )
+            
+            if st.button("Process Video", key="process_button"):
+                st.session_state.video_mode = "extract" if video_option == "Extract Frames (ZIP)" else "process"
 
 with col2:
     if upload_file is not None:
         st.subheader("Results")
 
         if upload_file.type in ['image/png', 'image/jpg', 'image/jpeg']:
-            # saving the uploaded image files to a temporary directory
             with tempfile.TemporaryDirectory() as temp_dir:
                 image_path=os.path.join(temp_dir, 'upload_file')
                 with open(image_path,'wb') as f:
                     f.write(upload_file.getbuffer())
                     st.toast("Image uploaded successfully!")
 
-                # using model for inference
                 progress_placeholder = st.empty()
                 status_placeholder = st.empty()
-                progress_placeholder.progress(0)
+                
                 status_placeholder.write("Initializing model...")
                 progress_placeholder.progress(25)
-                time.sleep(1)
-                model_input=image_path
-                model_predict=Roboflow(api_key='g9TuHO8utwgvXT0KEmnR')
-                status_placeholder.write("Loading workspace...")
-                progress_placeholder.progress(50)
-                time.sleep(1)
-                project=model_predict.workspace().project('tep-instance-segmentation-em54w')
-                model=project.version(2).model
+                
+                model = initialize_model()
+                if model is None:
+                    progress_placeholder.empty()
+                    status_placeholder.empty()
+                    st.stop()
+                
                 status_placeholder.write("Performing inference...")
                 progress_placeholder.progress(75)
-                time.sleep(1)
-                predictions = model.predict(model_input)
+                
+                predictions = model.predict(image_path)
                 predictions.save(os.path.join(temp_dir, 'predicted_image.png'))
+                
                 progress_placeholder.progress(100)
-                time.sleep(1)
+                time.sleep(0.5)
                 progress_placeholder.empty()
                 status_placeholder.empty()
-                # Encode image to base64 for tooltip
+                
                 with open(os.path.join(temp_dir, 'predicted_image.png'), 'rb') as img_file:
                     img_base64 = base64.b64encode(img_file.read()).decode()
-                # Extract and display labels
+                
                 labels = [pred['class'] for pred in predictions.predictions]
                 label_text = ", ".join(labels)
-                # Display image with tooltip
+                
                 st.markdown(f"""
                 <div title="{label_text}">
                     <img src="data:image/png;base64,{img_base64}" width="350" style="border-radius: 10px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);">
@@ -176,51 +207,119 @@ with col2:
                 """, unsafe_allow_html=True)
                 st.toast("Inference completed successfully!")
         else:
-            if not st.session_state.video_processed:
+            if st.session_state.video_mode and not st.session_state.video_processed:
                 st.toast("Video uploaded successfully!")
 
-                # extracting frames from the video
                 status_placeholder = st.empty()
                 progress_placeholder = st.empty()
                 status_placeholder.write("Loading video...")
+                
                 with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_video:
                     temp_video.write(upload_file.getbuffer())
                     temp_video_path = temp_video.name
                 clip=VideoFileClip(temp_video_path)
+                
                 with tempfile.TemporaryDirectory() as temp_dir:
                     frames_dir=os.path.join(temp_dir, 'frames')
                     os.makedirs(frames_dir, exist_ok=True)
 
                     total_frames = int(clip.fps * clip.duration)
                     progress_placeholder.progress(0)
-                    status_placeholder.write("Extracting frames...")
-                    with st.spinner('Extracting frames from video...'):
-                        for i, frame in enumerate(clip.iter_frames()):
-                            frame_image=Image.fromarray(frame)
-                            frame_image.save(os.path.join(frames_dir, f"frame_{i:04d}.png"))
-                            progress_placeholder.progress(min((i + 1) / total_frames, 1.0))
-                    progress_placeholder.empty()
-                    status_placeholder.write("Creating zip file...")
-                    # Create zip after extraction
-                    zip_path = shutil.make_archive(os.path.join(temp_dir, 'extracted_frames'), 'zip', frames_dir)
-                    with open(zip_path, 'rb') as f:
-                        st.session_state.zip_bytes = f.read()
-                clip.close()  # Close the video clip to release the file
-                os.unlink(temp_video_path)  # Clean up the temporary video file
-                status_placeholder.empty()
+                    status_placeholder.write(f"Extracting frames... (0/{total_frames})")
+                    
+                    for i, frame in enumerate(clip.iter_frames()):
+                        frame_image=Image.fromarray(frame)
+                        frame_image.save(os.path.join(frames_dir, f"frame_{i:04d}.png"))
+                        
+                        if i % max(1, total_frames // 20) == 0 or i == total_frames - 1:
+                            progress_value = min((i + 1) / total_frames, 1.0)
+                            progress_placeholder.progress(progress_value)
+                            status_placeholder.write(f"Extracting frames... ({i+1}/{total_frames})")
+                            time.sleep(0.01)
+                    
+                    if st.session_state.video_mode == "extract":
+                        status_placeholder.write("Creating zip file...")
+                        progress_placeholder.progress(1.0)
+                        time.sleep(0.1)
+                        
+                        zip_path = shutil.make_archive(os.path.join(temp_dir, 'extracted_frames'), 'zip', frames_dir)
+                        with open(zip_path, 'rb') as f:
+                            st.session_state.zip_bytes = f.read()
+                        
+                        progress_placeholder.empty()
+                        status_placeholder.empty()
+                    else:
+                        predicted_frames_dir = os.path.join(temp_dir, 'predicted_frames')
+                        os.makedirs(predicted_frames_dir, exist_ok=True)
+                        
+                        status_placeholder.write("Initializing model...")
+                        progress_placeholder.progress(0)
+                        time.sleep(0.1)
+                        
+                        model = initialize_model()
+                        if model is None:
+                            progress_placeholder.empty()
+                            status_placeholder.empty()
+                            clip.close()
+                            os.unlink(temp_video_path)
+                            st.stop()
+                        
+                        frame_files = sorted([f for f in os.listdir(frames_dir) if f.endswith('.png')])
+                        total_frames = len(frame_files)
+                        
+                        status_placeholder.write(f"Processing frames with model... (0/{total_frames})")
+                        
+                        for idx, frame_file in enumerate(frame_files):
+                            frame_path = os.path.join(frames_dir, frame_file)
+                            predictions = model.predict(frame_path)
+                            output_path = os.path.join(predicted_frames_dir, frame_file)
+                            predictions.save(output_path)
+                            
+                            if idx % max(1, total_frames // 20) == 0 or idx == total_frames - 1:
+                                progress_value = min((idx + 1) / total_frames, 1.0)
+                                progress_placeholder.progress(progress_value)
+                                status_placeholder.write(f"Processing frames with model... ({idx+1}/{total_frames})")
+                                time.sleep(0.01)
+                        
+                        status_placeholder.write("Creating processed video...")
+                        progress_placeholder.progress(1.0)
+                        time.sleep(0.1)
+                        
+                        predicted_frame_files = sorted([os.path.join(predicted_frames_dir, f) for f in os.listdir(predicted_frames_dir) if f.endswith('.png')])
+                        processed_clip = ImageSequenceClip(predicted_frame_files, fps=clip.fps)
+                        
+                        output_video_path = os.path.join(temp_dir, 'processed_video.mp4')
+                        processed_clip.write_videofile(output_video_path, codec='libx264', audio=False, logger=None)
+                        
+                        with open(output_video_path, 'rb') as f:
+                            st.session_state.processed_video_bytes = f.read()
+                        
+                        processed_clip.close()
+                        progress_placeholder.empty()
+                        status_placeholder.empty()
+                    
+                clip.close()
+                os.unlink(temp_video_path)
                 st.session_state.video_processed = True
 
-            if st.session_state.video_processed and st.session_state.zip_bytes:
-                download_button = st.download_button(
-                    label="Download Extracted Frames as ZIP",
-                    data=st.session_state.zip_bytes,
-                    file_name="extracted_frames.zip",
-                    mime="application/zip",
-                    key="download_zip"
-                )
-                if download_button:
-                    st.toast("Downloaded successfully!")
-        
-
-
-
+            if st.session_state.video_processed:
+                if st.session_state.video_mode == "extract" and st.session_state.zip_bytes:
+                    download_button = st.download_button(
+                        label="Download Extracted Frames as ZIP",
+                        data=st.session_state.zip_bytes,
+                        file_name="extracted_frames.zip",
+                        mime="application/zip",
+                        key="download_zip"
+                    )
+                    if download_button:
+                        st.toast("Downloaded successfully!")
+                elif st.session_state.video_mode == "process" and st.session_state.processed_video_bytes:
+                    download_button = st.download_button(
+                        label="Download Processed Video",
+                        data=st.session_state.processed_video_bytes,
+                        file_name="processed_video.mp4",
+                        mime="video/mp4",
+                        key="download_video"
+                    )
+                    if download_button:
+                        st.toast("Downloaded successfully!")
