@@ -1,6 +1,6 @@
 # Development and Evaluation of an AI Model for Identifying Critical Anatomical Structures in Surgical Operation Video
 
-[![Watch the video](Video/Biastrack.png)](https://www.youtube.com/watch?v=luolvB_hAVc)
+[![Watch the video](ProjectReport/Video.png)](https://www.youtube.com/watch?v=luolvB_hAVc)
 
 ## 📋 Project Description
 
