@@ -1,5 +1,7 @@
 # Development and Evaluation of an AI Model for Identifying Critical Anatomical Structures in Surgical Operation Video
 
+[![Watch the video](Video/Biastrack.png)](https://www.youtube.com/watch?v=luolvB_hAVc)
+
 ## 📋 Project Description
 
 This project focuses on the development of an AI-powered segmentation model for identifying critical anatomical structures in surgical operation videos, specifically targeting Transabdominal Preperitoneal(TEP) procedures. The primary deliverable is a user-friendly Streamlit web application that allows medical professionals and researchers to upload images, videos, or frame sequences for real-time inference using a pre-trained Roboflow model. The application supports direct image segmentation, video frame extraction, and full video annotation, providing labeled outputs to assist in surgical analysis and training.
