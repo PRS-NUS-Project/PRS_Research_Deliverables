@@ -19,7 +19,7 @@ Key objectives include:
 - **Model Integration**: Utilizes a YOLOv11 instance segmentation modelfor predictions.
 - **User-Friendly UI**: Streamlit-based interface with progress tracking, download options, and responsive design.
 
-## 👥 Contributors
+## 👥 Contributors (Alphabetically ordered)
 
 - Arshi Saxena
 - Norbert Oliver
