@@ -1,0 +1,8 @@
+As this project is still on-going to publish a paper in the near future, we are keeping the model weights link restricted, request for access by clicking the link along with the reason.
+
+Link to access the Model weights - Yolov11-seg-l:
+https://drive.google.com/drive/folders/1AtIhoNN_jierhGPtMnkurFlXs7ltO_Ip?usp=sharing
+
+Link to access the Model Weights - Yolov11-seg-m:
+https://drive.google.com/drive/folders/1vAoKO8zVETIykZvlzkQW-f1IwZe-rRlW?usp=sharing
+
